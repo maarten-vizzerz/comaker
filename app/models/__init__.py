@@ -6,13 +6,20 @@ from app.models.leverancier import Leverancier, LeverancierStatus, LeverancierTy
 from app.models.project import Project, ProjectStatus
 from app.models.contract import Contract, ContractStatus, ContractType
 from app.models.projectfase import (
-    ProjectFase, 
-    ProjectFaseDocument, 
+    ProjectFase,
+    ProjectFaseDocument,
     ProjectFaseCommentaar,
     ProjectFaseStatus,
     DocumentType,
     CommentaarType,
     CommentaarStatus
+)
+from app.models.proces_template import (
+    ProcesTemplate,
+    TemplateStap,
+    TemplateDocumentSjabloon,
+    ProcesCategorie,
+    TemplateStapStatus
 )
 from app.models.historie import (
     HistorieRecord,
@@ -38,7 +45,7 @@ __all__ = [
     "Contract",
     "ContractStatus",
     "ContractType",
-    # ProjectFase (NEW!)
+    # ProjectFase
     "ProjectFase",
     "ProjectFaseDocument",
     "ProjectFaseCommentaar",
@@ -46,6 +53,13 @@ __all__ = [
     "DocumentType",
     "CommentaarType",
     "CommentaarStatus",
+    # ProcesTemplate
+    "ProcesTemplate",
+    "TemplateStap",
+    "TemplateDocumentSjabloon",
+    "ProcesCategorie",
+    "TemplateStapStatus",
+    # Historie
     "HistorieRecord",
     "UserHistorie",
     "ProjectHistorie",

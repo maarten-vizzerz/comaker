@@ -45,7 +45,8 @@ class Project(Base):
     
     # Foreign keys
     projectleider_id = Column(String, ForeignKey("users.id"), nullable=True)
-    
+    template_id = Column(String, nullable=True)  # Will be FK after migration
+
     # Relationships
     projectleider = relationship("User", backref="projecten")
     

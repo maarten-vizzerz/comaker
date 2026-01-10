@@ -1,7 +1,8 @@
 """
 Projects endpoints - Complete CRUD with error handling
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 from typing import Optional
 import uuid
@@ -11,7 +12,10 @@ from app.db.session import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
 from app.models.project import Project, ProjectStatus
+from app.models.projectfase import ProjectFase, ProjectFaseStatus
+from app.models.proces_template import ProcesTemplate, TemplateStap
 from app.models.historie_setup import HistorieContext
+from sqlalchemy.orm import joinedload
 
 router = APIRouter(tags=["Projects"])
 
@@ -101,7 +105,7 @@ def list_projects(
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch projects: {str(e)}"
         )
 
@@ -117,13 +121,13 @@ def get_project(
     """
     try:
         project = db.query(Project).filter(Project.id == project_id).first()
-        
+
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found"
             )
-        
+
         return {
             "success": True,
             "data": {
@@ -156,7 +160,7 @@ def get_project(
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch project: {str(e)}"
         )
 
@@ -176,7 +180,7 @@ def create_project(
         for field in required_fields:
             if field not in project_data or not project_data[field]:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
                     detail=f"Missing required field: {field}"
                 )
         
@@ -187,7 +191,7 @@ def create_project(
         
         if existing:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Project nummer already exists"
             )
         
@@ -217,10 +221,39 @@ def create_project(
             budget_besteed=int(project_data.get("budget_besteed", 0)),
             start_datum=start_datum,
             eind_datum=eind_datum,
-            projectleider_id=project_data["projectleider_id"]
+            projectleider_id=project_data["projectleider_id"],
+            template_id=project_data.get("template_id")
         )
-        
+
         db.add(project)
+        db.flush()  # Get project ID
+
+        # If template_id is provided, create projectfases from template
+        if project_data.get("template_id"):
+            template = db.query(ProcesTemplate).options(
+                joinedload(ProcesTemplate.stappen)
+            ).filter(ProcesTemplate.id == project_data["template_id"]).first()
+
+            if template:
+                print(f"Applying template '{template.naam}' with {len(template.stappen)} steps to project {project.id}")
+
+                # Create a ProjectFase for each TemplateStap
+                for template_stap in sorted(template.stappen, key=lambda s: s.stap_nummer):
+                    projectfase = ProjectFase(
+                        id=f"fase_{uuid.uuid4().hex[:8]}",
+                        project_id=project.id,
+                        naam=template_stap.naam,
+                        beschrijving=template_stap.beschrijving,
+                        fase_nummer=template_stap.stap_nummer,
+                        status=ProjectFaseStatus.NIET_GESTART,
+                        verantwoordelijke_id=project.projectleider_id
+                    )
+                    db.add(projectfase)
+                    print(f"  Created fase {template_stap.stap_nummer}: {template_stap.naam}")
+
+                # Update template usage count
+                template.aantal_keer_gebruikt += 1
+
         db.commit()
         db.refresh(project)
         
@@ -242,7 +275,7 @@ def create_project(
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create project: {str(e)}"
         )
 
@@ -265,10 +298,10 @@ def update_project(
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found"
             )
-        
+
         # Update fields
         for key, value in project_data.items():
             if hasattr(project, key) and value is not None:
@@ -306,7 +339,7 @@ def update_project(
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update project: {str(e)}"
         )
 
@@ -325,10 +358,10 @@ def delete_project(
         
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Project not found"
             )
-        
+
         # Store project info for response
         project_info = {
             "id": project.id,
@@ -353,6 +386,6 @@ def delete_project(
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete project: {str(e)}"
         )

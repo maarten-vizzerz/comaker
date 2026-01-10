@@ -9,12 +9,16 @@ from app.db.session import engine, Base, SessionLocal
 
 # BELANGRIJK: Import ALLE models hier zodat SQLAlchemy ze kent!
 from app.models.user import User, UserRole
-from app.models.project import Project, ProjectStatus  
-from app.models.contract import Contract, ContractStatus, ContractType  
+from app.models.project import Project, ProjectStatus
+from app.models.contract import Contract, ContractStatus, ContractType
 from app.models.leverancier import Leverancier, LeverancierStatus, LeverancierType
 from app.models.projectfase import (
     ProjectFase, ProjectFaseDocument, ProjectFaseCommentaar,
     ProjectFaseStatus, DocumentType, CommentaarType, CommentaarStatus
+)
+from app.models.proces_template import (
+    ProcesTemplate, TemplateStap, TemplateDocumentSjabloon,
+    ProcesCategorie, TemplateStapStatus
 )
 
 from app.core.security import get_password_hash
@@ -430,7 +434,175 @@ def init_db():
             
             db.flush()
             print(f"✅ Created 4 fase commentaren")
-            
+
+            # ============================================================
+            # 8. PROCES TEMPLATES
+            # ============================================================
+            print("\n📋 Creating proces templates...")
+
+            # Maak de standaard 9-stappen DUWO proces template
+            template_duwo = ProcesTemplate(
+                id=str(uuid.uuid4()),
+                naam="DUWO 9-stappen proces",
+                beschrijving="Standaard DUWO proces voor renovatie- en onderhoudsprojecten",
+                categorie=ProcesCategorie.RENOVATIE,
+                is_actief=True,
+                is_standaard=True,
+                aantal_keer_gebruikt=0,
+                gemaakt_door_id=user_admin.id
+            )
+            db.add(template_duwo)
+            db.flush()
+
+            # Maak de 9 stappen van het DUWO proces
+            stappen_config = [
+                {
+                    "nummer": 1,
+                    "naam": "Initiatief",
+                    "beschrijving": "Aanmelding en registratie van het project",
+                    "doorlooptijd": 3,
+                    "vereist_leverancier": False,
+                    "instructies": "Leg het projectinitiatief vast en maak een eerste inschatting van de scope"
+                },
+                {
+                    "nummer": 2,
+                    "naam": "Projectschouw",
+                    "beschrijving": "Intake en opname van de situatie ter plaatse",
+                    "doorlooptijd": 5,
+                    "vereist_leverancier": False,
+                    "instructies": "Plan en voer de projectschouw uit, maak foto's en noteer bijzonderheden"
+                },
+                {
+                    "nummer": 3,
+                    "naam": "Planvorming",
+                    "beschrijving": "Technische uitwerking en begroting",
+                    "doorlooptijd": 10,
+                    "vereist_leverancier": False,
+                    "instructies": "Werk het plan uit, maak technische tekeningen en bereken de kosten"
+                },
+                {
+                    "nummer": 4,
+                    "naam": "Aanbieding",
+                    "beschrijving": "Offertes opvragen bij leveranciers",
+                    "doorlooptijd": 14,
+                    "vereist_leverancier": True,
+                    "instructies": "Selecteer leveranciers, vraag offertes op en vergelijk deze"
+                },
+                {
+                    "nummer": 5,
+                    "naam": "Opdracht",
+                    "beschrijving": "Gunning en contractvorming",
+                    "doorlooptijd": 7,
+                    "vereist_leverancier": True,
+                    "instructies": "Gun de opdracht, stel het contract op en laat dit ondertekenen"
+                },
+                {
+                    "nummer": 6,
+                    "naam": "Communicatie",
+                    "beschrijving": "Informeren van bewoners en stakeholders",
+                    "doorlooptijd": 5,
+                    "vereist_leverancier": False,
+                    "instructies": "Communiceer de planning naar bewoners en andere betrokkenen"
+                },
+                {
+                    "nummer": 7,
+                    "naam": "Realisatie",
+                    "beschrijving": "Uitvoering van de werkzaamheden",
+                    "doorlooptijd": 30,
+                    "vereist_leverancier": True,
+                    "instructies": "Begeleid de uitvoering, voer tussentijdse controles uit"
+                },
+                {
+                    "nummer": 8,
+                    "naam": "Oplevering",
+                    "beschrijving": "Controle en voorlopige oplevering",
+                    "doorlooptijd": 7,
+                    "vereist_leverancier": True,
+                    "instructies": "Controleer de werkzaamheden, maak een puntlijst en laat deze afwerken"
+                },
+                {
+                    "nummer": 9,
+                    "naam": "Garantie",
+                    "beschrijving": "Nazorg en garantieperiode",
+                    "doorlooptijd": 365,
+                    "vereist_leverancier": False,
+                    "instructies": "Registreer eventuele gebreken en zorg voor afhandeling binnen de garantieperiode"
+                }
+            ]
+
+            for stap_config in stappen_config:
+                stap = TemplateStap(
+                    id=str(uuid.uuid4()),
+                    template_id=template_duwo.id,
+                    stap_nummer=stap_config["nummer"],
+                    naam=stap_config["naam"],
+                    beschrijving=stap_config["beschrijving"],
+                    default_status=TemplateStapStatus.NIET_GESTART,
+                    geschatte_doorlooptijd_dagen=stap_config["doorlooptijd"],
+                    vereist_leverancier=stap_config["vereist_leverancier"],
+                    instructies=stap_config["instructies"]
+                )
+                db.add(stap)
+
+            db.flush()
+            print(f"✅ Created proces template met 9 stappen")
+
+            # Maak een snelle reparatie template
+            template_snel = ProcesTemplate(
+                id=str(uuid.uuid4()),
+                naam="Snelle reparatie",
+                beschrijving="Vereenvoudigd proces voor kleine reparaties",
+                categorie=ProcesCategorie.ONDERHOUD,
+                is_actief=True,
+                is_standaard=False,
+                aantal_keer_gebruikt=0,
+                gemaakt_door_id=user_admin.id
+            )
+            db.add(template_snel)
+            db.flush()
+
+            # Maak 3 stappen voor snelle reparatie
+            snelle_stappen = [
+                {
+                    "nummer": 1,
+                    "naam": "Aanmelding",
+                    "beschrijving": "Registratie en eerste beoordeling",
+                    "doorlooptijd": 1,
+                    "vereist_leverancier": False
+                },
+                {
+                    "nummer": 2,
+                    "naam": "Uitvoering",
+                    "beschrijving": "Directe uitvoering van de reparatie",
+                    "doorlooptijd": 3,
+                    "vereist_leverancier": True
+                },
+                {
+                    "nummer": 3,
+                    "naam": "Controle",
+                    "beschrijving": "Controle en afsluiting",
+                    "doorlooptijd": 1,
+                    "vereist_leverancier": False
+                }
+            ]
+
+            for stap_config in snelle_stappen:
+                stap = TemplateStap(
+                    id=str(uuid.uuid4()),
+                    template_id=template_snel.id,
+                    stap_nummer=stap_config["nummer"],
+                    naam=stap_config["naam"],
+                    beschrijving=stap_config["beschrijving"],
+                    default_status=TemplateStapStatus.NIET_GESTART,
+                    geschatte_doorlooptijd_dagen=stap_config["doorlooptijd"],
+                    vereist_leverancier=stap_config["vereist_leverancier"],
+                    instructies=None
+                )
+                db.add(stap)
+
+            db.flush()
+            print(f"✅ Created snelle reparatie template met 3 stappen")
+
             # ============================================================
             # COMMIT ALLES
             # ============================================================
@@ -456,6 +628,8 @@ def init_db():
             print(f"   • 5 Projectfases")
             print(f"   • 3 Documents (1 intern, 2 voor leverancier)")
             print(f"   • 4 Commentaren (2 medewerker, 2 leverancier)")
+            print(f"   • 2 Proces templates (DUWO 9-stappen + Snelle reparatie)")
+            print(f"   • 12 Template stappen totaal")
             
             print("\n🧪 Test scenarios:")
             print("   1. Login als jan@debouwer.nl → Zie alleen fases 2, 3, 5")

@@ -148,10 +148,16 @@ def before_flush(session, flush_context, instances):
                 session._historie_updates = []
             
             # Get oude waardes
+            from sqlalchemy import inspect as sqla_inspect
             oude_waarde = {}
-            for attr in session.get_attribute_history(obj, 'updated_at').unchanged:
-                oude_waarde['updated_at'] = str(attr) if attr else None
-            
+
+            # Get the old value of updated_at if it changed
+            insp = sqla_inspect(obj)
+            if 'updated_at' in insp.attrs:
+                hist = insp.attrs.updated_at.history
+                if hist.has_changes() and hist.deleted:
+                    oude_waarde['updated_at'] = str(hist.deleted[0]) if hist.deleted[0] else None
+
             session._historie_updates.append((obj, oude_waarde))
     
     # Track verwijderde objecten (DELETE)

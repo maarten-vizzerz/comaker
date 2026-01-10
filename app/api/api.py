@@ -3,7 +3,7 @@ Main API router - combines all endpoint routers
 """
 from fastapi import APIRouter
 
-from app.api.endpoints import auth, projects, reports, contracts, leveranciers, projectfase_endpoints, historie
+from app.api.endpoints import auth, projects, reports, contracts, leveranciers, projectfase_endpoints, historie, proces_templates, users
 
 # Create main API router
 api_router = APIRouter()
@@ -41,4 +41,12 @@ api_router.include_router(
     historie.router,
     #prefix="/api/historie",
     tags=["historie"]
+)
+api_router.include_router(
+    proces_templates.router,
+    tags=["proces-templates"]
+)
+api_router.include_router(
+    users.router,
+    tags=["users"]
 )
