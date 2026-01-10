@@ -29,6 +29,7 @@ from app.models.historie import (
     LeverancierHistorie,
     ProjectFaseHistorie
 )
+from app.models.vestiging import Vestiging
 
 __all__ = [
     # User
@@ -66,4 +67,6 @@ __all__ = [
     "ContractHistorie",
     "LeverancierHistorie",
     "ProjectFaseHistorie",
+    # Vestiging
+    "Vestiging",
 ]

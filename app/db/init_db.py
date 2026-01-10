@@ -12,6 +12,7 @@ from app.models.user import User, UserRole
 from app.models.project import Project, ProjectStatus
 from app.models.contract import Contract, ContractStatus, ContractType
 from app.models.leverancier import Leverancier, LeverancierStatus, LeverancierType
+from app.models.vestiging import Vestiging
 from app.models.projectfase import (
     ProjectFase, ProjectFaseDocument, ProjectFaseCommentaar,
     ProjectFaseStatus, DocumentType, CommentaarType, CommentaarStatus
@@ -104,9 +105,81 @@ def init_db():
             
             db.flush()
             print(f"✅ Created 2 leveranciers")
-            
+
             # ============================================================
-            # 2. USERS (inclusief leverancier users!)
+            # 2. VESTIGINGEN
+            # ============================================================
+            print("\n🏢 Creating vestigingen...")
+
+            vestiging_leiden = Vestiging(
+                id=f"ves_{uuid.uuid4().hex[:8]}",
+                naam="Vestiging Leiden",
+                code="LED",
+                adres_straat="Stationsweg",
+                adres_huisnummer="1",
+                adres_postcode="2312 AV",
+                adres_plaats="Leiden",
+                adres_land="Nederland",
+                telefoon="071-1234567",
+                email="leiden@duwo.nl",
+                is_actief=True,
+                notities="Hoofdkantoor Leiden"
+            )
+            db.add(vestiging_leiden)
+
+            vestiging_delft = Vestiging(
+                id=f"ves_{uuid.uuid4().hex[:8]}",
+                naam="Vestiging Delft",
+                code="DFT",
+                adres_straat="Buitenhofdreef",
+                adres_huisnummer="10",
+                adres_postcode="2611 XA",
+                adres_plaats="Delft",
+                adres_land="Nederland",
+                telefoon="015-2123456",
+                email="delft@duwo.nl",
+                is_actief=True,
+                notities="Vestiging bij TU Delft"
+            )
+            db.add(vestiging_delft)
+
+            vestiging_amsterdam = Vestiging(
+                id=f"ves_{uuid.uuid4().hex[:8]}",
+                naam="Vestiging Amsterdam",
+                code="AMS",
+                adres_straat="Weesperzijde",
+                adres_huisnummer="190",
+                adres_postcode="1097 DZ",
+                adres_plaats="Amsterdam",
+                adres_land="Nederland",
+                telefoon="020-5251234",
+                email="amsterdam@duwo.nl",
+                is_actief=True,
+                notities="Vestiging Amsterdam Zuidoost"
+            )
+            db.add(vestiging_amsterdam)
+
+            vestiging_denhaag = Vestiging(
+                id=f"ves_{uuid.uuid4().hex[:8]}",
+                naam="Vestiging Den Haag",
+                code="DHG",
+                adres_straat="Prins Clauslaan",
+                adres_huisnummer="8",
+                adres_postcode="2595 AJ",
+                adres_plaats="Den Haag",
+                adres_land="Nederland",
+                telefoon="070-3456789",
+                email="denhaag@duwo.nl",
+                is_actief=True,
+                notities="Vestiging centrum Den Haag"
+            )
+            db.add(vestiging_denhaag)
+
+            db.flush()
+            print(f"✅ Created 4 vestigingen")
+
+            # ============================================================
+            # 3. USERS (inclusief leverancier users!)
             # ============================================================
             print("\n👤 Creating test users...")
             
@@ -182,10 +255,10 @@ def init_db():
             print(f"✅ Created 6 users (4 internal, 2 leveranciers)")
             
             # ============================================================
-            # 3. PROJECT
+            # 4. PROJECT
             # ============================================================
             print("\n🏗️  Creating project...")
-            
+
             project = Project(
                 id=f"prj_{uuid.uuid4().hex[:8]}",
                 project_nummer = "PRJ-001",
@@ -193,6 +266,7 @@ def init_db():
                 beschrijving="Complete renovatie van kantoorpand inclusief nieuwe installaties",
                 status=ProjectStatus.IN_UITVOERING,
                 projectleider_id=user_projectleider.id,
+                vestiging_id=vestiging_leiden.id,
                 budget_totaal=250000.00,
                 start_datum=datetime.now(timezone.utc) - timedelta(days=30),
                 eind_datum=datetime.now(timezone.utc) + timedelta(days=90),
@@ -204,14 +278,15 @@ def init_db():
             print(f"✅ Created project: {project.naam}")
             
             # ============================================================
-            # 4. CONTRACT - ✅ FIXED: Gebruik correcte velden!
+            # 5. CONTRACT - ✅ FIXED: Gebruik correcte velden!
             # ============================================================
             print("\n📄 Creating contract...")
-            
+
             contract = Contract(
                 id=f"ctr_{uuid.uuid4().hex[:8]}",
                 project_id=project.id,
                 leverancier_id=leverancier_bouwbedrijf.id,
+                vestiging_id=vestiging_leiden.id,
                 contract_nummer="CTR-2025-001",
                 naam="Bouw renovatie kantoorpand",  # ✅ naam ipv omschrijving
                 beschrijving="Bouwwerkzaamheden renovatie kantoorpand",  # ✅ beschrijving
@@ -231,7 +306,7 @@ def init_db():
             print(f"✅ Created contract: {contract.contract_nummer}")
             
             # ============================================================
-            # 5. PROJECTFASES
+            # 6. PROJECTFASES
             # ============================================================
             print("\n📋 Creating projectfases...")
             
@@ -314,7 +389,7 @@ def init_db():
             print(f"✅ Created 5 projectfases")
             
             # ============================================================
-            # 6. PROJECTFASE DOCUMENTEN
+            # 7. PROJECTFASE DOCUMENTEN
             # ============================================================
             print("\n📎 Creating fase documenten...")
             
@@ -376,7 +451,7 @@ def init_db():
             print(f"✅ Created 3 fase documenten")
             
             # ============================================================
-            # 7. PROJECTFASE COMMENTAREN
+            # 8. PROJECTFASE COMMENTAREN
             # ============================================================
             print("\n💬 Creating fase commentaren...")
             
@@ -436,7 +511,7 @@ def init_db():
             print(f"✅ Created 4 fase commentaren")
 
             # ============================================================
-            # 8. PROCES TEMPLATES
+            # 9. PROCES TEMPLATES
             # ============================================================
             print("\n📋 Creating proces templates...")
 
@@ -621,10 +696,11 @@ def init_db():
             print(f"   Leverancier 2: maria@installatietech.nl / Test1234!")
             
             print("\n📊 Summary:")
+            print(f"   • 4 Vestigingen (Leiden, Delft, Amsterdam, Den Haag)")
             print(f"   • 2 Leveranciers")
             print(f"   • 6 Users (4 internal, 2 leveranciers)")
-            print(f"   • 1 Project")
-            print(f"   • 1 Contract")
+            print(f"   • 1 Project (linked to Vestiging Leiden)")
+            print(f"   • 1 Contract (linked to Vestiging Leiden)")
             print(f"   • 5 Projectfases")
             print(f"   • 3 Documents (1 intern, 2 voor leverancier)")
             print(f"   • 4 Commentaren (2 medewerker, 2 leverancier)")

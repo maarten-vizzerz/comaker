@@ -26,6 +26,7 @@ def list_projects(
     limit: int = 25,
     search: Optional[str] = None,
     status: Optional[str] = None,
+    vestiging_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -35,7 +36,7 @@ def list_projects(
     try:
         # Base query
         query = db.query(Project)
-        
+
         # Apply filters
         if search:
             search_term = f"%{search}%"
@@ -43,12 +44,15 @@ def list_projects(
                 (Project.naam.ilike(search_term)) |
                 (Project.project_nummer.ilike(search_term))
             )
-        
+
         if status:
             try:
                 query = query.filter(Project.status == ProjectStatus(status))
             except ValueError:
                 pass  # Invalid status, ignore filter
+
+        if vestiging_id:
+            query = query.filter(Project.vestiging_id == vestiging_id)
         
         # Count total
         total = query.count()
@@ -80,6 +84,12 @@ def list_projects(
                         "email": p.projectleider.email,
                         "role": p.projectleider.role.value
                     } if p.projectleider else None,
+                    "vestiging": {
+                        "id": p.vestiging.id,
+                        "naam": p.vestiging.naam,
+                        "code": p.vestiging.code,
+                        "plaats": p.vestiging.adres_plaats
+                    } if p.vestiging else None,
                     "created_at": p.created_at.isoformat() if p.created_at else None,
                     "updated_at": p.updated_at.isoformat() if p.updated_at else None
                 }
@@ -149,6 +159,12 @@ def get_project(
                     "email": project.projectleider.email,
                     "role": project.projectleider.role.value
                 } if project.projectleider else None,
+                "vestiging": {
+                    "id": project.vestiging.id,
+                    "naam": project.vestiging.naam,
+                    "code": project.vestiging.code,
+                    "plaats": project.vestiging.adres_plaats
+                } if project.vestiging else None,
                 "created_at": project.created_at.isoformat() if project.created_at else None,
                 "updated_at": project.updated_at.isoformat() if project.updated_at else None
             }
@@ -222,7 +238,8 @@ def create_project(
             start_datum=start_datum,
             eind_datum=eind_datum,
             projectleider_id=project_data["projectleider_id"],
-            template_id=project_data.get("template_id")
+            template_id=project_data.get("template_id"),
+            vestiging_id=project_data.get("vestiging_id")
         )
 
         db.add(project)

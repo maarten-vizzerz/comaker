@@ -17,27 +17,63 @@ _opmerking: ContextVar[Optional[str]] = ContextVar('opmerking', default=None)
 
 class HistorieContext:
     """Context manager voor historie tracking"""
-    
+
+    def __init__(self, db: Session, user_id: str, actie: str, tabel: str, record_id: str, opmerking: Optional[str] = None):
+        """
+        Initialize historie context
+
+        Args:
+            db: Database session
+            user_id: ID of user performing action
+            actie: Type of action (create, update, delete)
+            tabel: Table name
+            record_id: Record ID
+            opmerking: Optional comment
+        """
+        self.db = db
+        self.user_id = user_id
+        self.actie = actie
+        self.tabel = tabel
+        self.record_id = record_id
+        self.opmerking = opmerking
+        self._previous_user_id = None
+        self._previous_opmerking = None
+
+    def __enter__(self):
+        """Enter context - set user ID and opmerking"""
+        self._previous_user_id = _user_id.get()
+        self._previous_opmerking = _opmerking.get()
+        _user_id.set(self.user_id)
+        if self.opmerking:
+            _opmerking.set(self.opmerking)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context - restore previous values"""
+        _user_id.set(self._previous_user_id)
+        _opmerking.set(self._previous_opmerking)
+        return False
+
     @staticmethod
     def set_user_id(user_id: str):
         """Set user ID voor huidige operatie"""
         _user_id.set(user_id)
-    
+
     @staticmethod
     def set_opmerking(opmerking: str):
         """Set opmerking voor huidige operatie"""
         _opmerking.set(opmerking)
-    
+
     @staticmethod
     def get_user_id() -> Optional[str]:
         """Get current user ID"""
         return _user_id.get()
-    
+
     @staticmethod
     def get_opmerking() -> Optional[str]:
         """Get current opmerking"""
         return _opmerking.get()
-    
+
     @staticmethod
     def clear():
         """Clear context"""
@@ -69,9 +105,10 @@ def enable_historie_tracking(session: Session):
 # Models die historie tracking hebben
 TRACKED_MODELS = [
     'User',
-    'Project', 
+    'Project',
     'Contract',
     'Leverancier',
+    'Vestiging',
     'ProjectFase',
     'ProjectFaseDocument',
     'ProjectFaseCommentaar'
@@ -214,7 +251,7 @@ def after_flush(session, flush_context):
 def setup_historie_listeners():
     """
     Setup historie event listeners
-    
+
     Dit wordt aangeroepen bij startup
     """
     print("✅ Historie tracking event listeners geregistreerd")
@@ -222,6 +259,7 @@ def setup_historie_listeners():
     print("   - Project")
     print("   - Contract")
     print("   - Leverancier")
+    print("   - Vestiging")
     print("   - ProjectFase")
     print("   - ProjectFaseDocument")
     print("   - ProjectFaseCommentaar")

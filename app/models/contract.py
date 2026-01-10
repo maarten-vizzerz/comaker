@@ -68,12 +68,14 @@ class Contract(Base):
     # Relations
     project_id = Column(String, ForeignKey('projects.id'), nullable=True, index=True)
     verantwoordelijke_id = Column(String, ForeignKey('users.id'), nullable=False, index=True)
-    
+    vestiging_id = Column(String, ForeignKey('vestigingen.id'), nullable=True, index=True)
+
     # Relationships - UPDATED: Add leverancier relationship!
     leverancier = relationship("Leverancier", foreign_keys=[leverancier_id])
     project = relationship("Project", foreign_keys=[project_id])
     verantwoordelijke = relationship("User", foreign_keys=[verantwoordelijke_id])
     goedgekeurd_door = relationship("User", foreign_keys=[goedgekeurd_door_id])
+    vestiging = relationship("Vestiging", foreign_keys=[vestiging_id])
     
     # Versiebeheer
     versie_nummer = Column(Integer, default=1, nullable=False)
